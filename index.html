@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>武器-基质筛选工具（GitHub Excel版）</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { max-width: 1000px; margin: 20px auto; font-family: "Microsoft Yahei", sans-serif; }
+        .container { padding: 20px; border: 1px solid #eee; border-radius: 8px; }
+        .form-group { margin: 15px 0; }
+        label { display: inline-block; width: 120px; font-weight: bold; }
+        input[type="text"], select { width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; background: #0078d7; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #005a9e; }
+        .result-area { margin-top: 30px; padding: 20px; border-top: 1px dashed #ccc; }
+        .weapon-item { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 4px; }
+        .error { color: red; margin-top: 10px; }
+        .success { color: green; margin-top: 10px; }
+        .loading { color: #666; margin-top: 10px; }
+    </style>
+    <!-- 引入SheetJS库，解析Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>游戏武器-基质筛选工具</h1>
+    <!-- 移除文件上传框，改为自动加载GitHub里的Excel -->
+    <div class="form-group">
+        <div id="loadStatus" class="loading">正在加载武器数据...</div>
+    </div>
+    <div class="form-group">
+        <label>基质基础属性：</label>
+        <input type="text" id="baseAttr" placeholder="如：攻击力+100">
+    </div>
+    <div class="form-group">
+        <label>基质附加属性：</label>
+        <input type="text" id="extraAttr" placeholder="如：火属性伤害+20%">
+    </div>
+    <div class="form-group">
+        <label>基质技能属性：</label>
+        <input type="text" id="skillAttr" placeholder="如：炎爆术+1">
+    </div>
+    <div class="form-group">
+        <label>匹配模式：</label>
+        <select id="matchMode">
+            <option value="false">模糊匹配（包含词条）</option>
+            <option value="true">精准匹配（完全一致）</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <button onclick="filterWeapons()" disabled id="filterBtn">开始筛选</button>
+        <div id="msg" class=""></div>
+    </div>
+
+    <!-- 筛选结果展示 -->
+    <div class="result-area">
+        <h3>筛选结果：</h3>
+        <div id="resultList"></div>
+    </div>
+</div>
+
+<script>
+    // 全局存储解析后的武器数据
+    let allWeapons = [];
+    // Excel文件路径（GitHub仓库内的相对路径，和index.html同目录）
+    const EXCEL_FILE_PATH = "weapon_data.xlsx";
+
+    // 页面加载完成后，自动读取GitHub里的Excel
+    window.onload = function() {
+        loadExcelFromGitHub();
+    };
+
+    // 从GitHub仓库读取Excel文件（通过相对路径）
+    function loadExcelFromGitHub() {
+        const loadStatus = document.getElementById("loadStatus");
+        const filterBtn = document.getElementById("filterBtn");
+
+        // 发送请求读取Excel文件
+        fetch(EXCEL_FILE_PATH)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`加载失败：${response.status}`);
+                }
+                return response.arrayBuffer();
+            })
+            .then(data => {
+                // 解析Excel
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                allWeapons = XLSX.utils.sheet_to_json(firstSheet);
+
+                // 更新状态，启用筛选按钮
+                loadStatus.className = "success";
+                loadStatus.innerText = `✅ 成功加载 ${allWeapons.length} 条武器数据`;
+                filterBtn.disabled = false;
+            })
+            .catch(err => {
+                loadStatus.className = "error";
+                loadStatus.innerText = `❌ 武器数据加载失败：${err.message}，请检查Excel文件路径`;
+                filterBtn.disabled = true;
+            });
+    }
+
+    // 词条匹配逻辑
+    function matchAttr(weaponAttr, matrixAttr, isExactMatch) {
+        if (!matrixAttr || matrixAttr.trim() === "") return true;
+        if (!weaponAttr || weaponAttr.trim() === "") return false;
+        weaponAttr = weaponAttr.toString().trim();
+        matrixAttr = matrixAttr.toString().trim();
+        return isExactMatch ? weaponAttr === matrixAttr : weaponAttr.includes(matrixAttr);
+    }
+
+    // 筛选武器核心方法
+    function filterWeapons() {
+        const baseAttr = document.getElementById("baseAttr").value.trim();
+        const extraAttr = document.getElementById("extraAttr").value.trim();
+        const skillAttr = document.getElementById("skillAttr").value.trim();
+        const isExactMatch = document.getElementById("matchMode").value === "true";
+        const msgDom = document.getElementById("msg");
+        const resultList = document.getElementById("resultList");
+
+        // 执行筛选
+        const matchedWeapons = allWeapons.filter(weapon => {
+            const baseMatch = matchAttr(weapon['基础属性'], baseAttr, isExactMatch);
+            const extraMatch = matchAttr(weapon['附加属性'], extraAttr, isExactMatch);
+            const skillMatch = matchAttr(weapon['技能属性'], skillAttr, isExactMatch);
+            return baseMatch || extraMatch || skillMatch;
+        });
+
+        // 提示结果数量
+        msgDom.className = "success";
+        msgDom.innerText = `共找到 ${matchedWeapons.length} 个匹配的武器`;
+        // 渲染结果
+        renderResult(matchedWeapons);
+    }
+
+    // 渲染筛选结果
+    function renderResult(weapons) {
+        const resultList = document.getElementById("resultList");
+        if (!weapons || weapons.length === 0) {
+            resultList.innerHTML = "<p>未找到匹配的武器！</p>";
+            return;
+        }
+
+        let html = "";
+        weapons.forEach(weapon => {
+            html += `
+                <div class="weapon-item">
+                    <p><strong>武器名称：</strong>${weapon['武器名称'] || "无"}</p>
+                    <p><strong>基础属性：</strong>${weapon['基础属性'] || "无"}</p>
+                    <p><strong>附加属性：</strong>${weapon['附加属性'] || "无"}</p>
+                    <p><strong>技能属性：</strong>${weapon['技能属性'] || "无"}</p>
+                </div>
+                `;
+        });
+        resultList.innerHTML = html;
+    }
+</script>
+</body>
+</html>
