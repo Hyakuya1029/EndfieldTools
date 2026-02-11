@@ -31,14 +31,17 @@
     <div class="form-group">
         <label>基质基础属性：</label>
         <input type="text" id="baseAttr" placeholder="如：攻击力+100">
+        <select id="baseAttrSelect"></select>
     </div>
     <div class="form-group">
         <label>基质附加属性：</label>
         <input type="text" id="extraAttr" placeholder="如：火属性伤害+20%">
+        <select id="extraAttrSelect"></select>
     </div>
     <div class="form-group">
         <label>基质技能属性：</label>
         <input type="text" id="skillAttr" placeholder="如：炎爆术+1">
+        <select id="skillAttrSelect"></select>
     </div>
     <div class="form-group">
         <label>匹配模式：</label>
@@ -64,9 +67,17 @@
     let allWeapons = [];
     // Excel文件路径（GitHub仓库内的相对路径，和index.html同目录）
     const EXCEL_FILE_PATH = "weapon_data.xlsx";
+    // 前端静态词条数据：按需维护
+    const STATIC_OPTIONS = {
+        base: ["敏捷提升", "力量提升", "意志提升", "智识提升", "主能力提升"],
+        extra: ["攻击提升", "生命提升", "物理伤害提升", "灼热伤害提升", "电磁伤害提升", "寒冷伤害提升", "自然伤害提升", "暴击率提升", "源石技艺提升", "终结技效率提升", "法术伤害提升", "治疗效率提升"],
+        skill: ["效益", "流转", "夜幕", "迸发", "切骨", "医疗", "附术", "残暴", "巧技", "昂扬", "粉碎", "追袭", "压制", "强攻"]
+    };
 
     // 页面加载完成后，自动读取GitHub里的Excel
     window.onload = function() {
+        fillSelectOptionsFromStatic();
+        bindSelectToInput();
         loadExcelFromGitHub();
     };
 
@@ -99,6 +110,41 @@
                 loadStatus.innerText = `❌ 武器数据加载失败：${err.message}，请检查Excel文件路径`;
                 filterBtn.disabled = true;
             });
+    }
+
+    function fillSelectOptionsFromStatic() {
+        setOptions(document.getElementById("baseAttrSelect"), new Set(STATIC_OPTIONS.base));
+        setOptions(document.getElementById("extraAttrSelect"), new Set(STATIC_OPTIONS.extra));
+        setOptions(document.getElementById("skillAttrSelect"), new Set(STATIC_OPTIONS.skill));
+    }
+
+    function setOptions(selectEl, setData) {
+        selectEl.innerHTML = "";
+        const empty = document.createElement("option");
+        empty.value = "";
+        empty.text = "请选择词条";
+        selectEl.appendChild(empty);
+
+        Array.from(setData).sort().forEach(val => {
+            const opt = document.createElement("option");
+            opt.value = val;
+            opt.text = val;
+            selectEl.appendChild(opt);
+        });
+    }
+
+    function bindSelectToInput() {
+        const map = [
+            { select: "baseAttrSelect", input: "baseAttr" },
+            { select: "extraAttrSelect", input: "extraAttr" },
+            { select: "skillAttrSelect", input: "skillAttr" }
+        ];
+
+        map.forEach(item => {
+            document.getElementById(item.select).addEventListener("change", e => {
+                document.getElementById(item.input).value = e.target.value;
+            });
+        });
     }
 
     // 词条匹配逻辑
