@@ -5,79 +5,308 @@
     <title>明日方舟:终末地基质筛选工具</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { max-width: 1000px; margin: 20px auto; font-family: "Microsoft Yahei", sans-serif; }
-        .container { padding: 20px; border: 1px solid #eee; border-radius: 8px; }
-        .form-group { margin: 15px 0; }
-        label { display: inline-block; width: 120px; font-weight: bold; }
-        select { width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 20px; background: #0078d7; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #005a9e; }
-        .result-area { margin-top: 30px; padding: 20px; border-top: 1px dashed #ccc; }
-        .weapon-item { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 4px; }
-        .error { color: red; margin-top: 10px; }
-        .success { color: green; margin-top: 10px; }
-        .loading { color: #666; margin-top: 10px; }
-        /* 新增：武器卡片布局（Flex排版，图片+信息） */
-        .weapon-item {
-            margin: 15px 0;
-            padding: 15px;
-            background: #f5f5f5;
-            border-radius: 8px;
+        body {
+            background: #f8f9fa;
+            min-height: 100vh;
+            font-family: "Microsoft Yahei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 32px;
+            text-align: center;
+        }
+        .subtitle {
+            color: #718096;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .subtitle ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .subtitle li {
+            padding: 5px 15px;
+            background: #edf2f7;
+            border-radius: 20px;
+            color: #4a5568;
+        }
+
+        .filter-section {
+            background: #f7fafc;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid #e2e8f0;
+        }
+        .filter-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
+            gap: 10px;
+        }
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        label {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 14px;
+        }
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            color: #2d3748;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        select:hover {
+            border-color: #a0aec0;
+        }
+        select:focus {
+            outline: none;
+            border-color: #4a5568;
+            box-shadow: 0 0 0 3px rgba(74, 85, 104, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        button {
+            padding: 14px 32px;
+            background: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 85, 104, 0.25);
+            background: #2d3748;
+        }
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            border-left: 4px solid #c53030;
+        }
+        .success {
+            background: #c6f6d5;
+            color: #22543d;
+            border-left: 4px solid #38a169;
+        }
+        .loading {
+            background: #bee3f8;
+            color: #2c5282;
+            border-left: 4px solid #3182ce;
+        }
+
+        .result-area {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e2e8f0;
+        }
+        .result-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 20px;
+        }
+        .result-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
             gap: 20px;
         }
-        /* 新增：武器图片样式 */
-        .weapon-img {
-            width: 120px;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 8px;
-            background: #ddd;
+        .weapon-item {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            transition: all 0.3s ease;
+            cursor: default;
         }
-        /* 新增：武器信息区域占满剩余宽度 */
-        .weapon-info { flex: 1; }
+        .weapon-item:hover {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            border-color: #cbd5e0;
+            transform: translateY(-2px);
+        }
+        .weapon-img {
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+            flex-shrink: 0;
+        }
+        .weapon-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+        }
+        .weapon-info h3 {
+            color: #2d3748;
+            font-size: 18px;
+            margin: 0;
+        }
+        .weapon-type {
+            margin: 0;
+            padding: 0;
+        }
+        .type-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #edf2f7;
+            color: #4a5568;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #cbd5e0;
+        }
+        .weapon-info p {
+            color: #4a5568;
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .weapon-info strong {
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .empty-state p {
+            font-size: 16px;
+            color: #718096;
+        }
+
+        .footer {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            color: #a0aec0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
     </style>
     <!-- 引入SheetJS库，解析Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="container">
-    <h1>明日方舟:终末地基质筛选工具</h1>
-    <h2>武器目前仅收录六星武器和五行武器</h2>
-    <h2>基质目前仅收录五星基质</h2>
-    <!-- 移除文件上传框，改为自动加载GitHub里的Excel -->
-    <div class="form-group">
-        <div id="loadStatus" class="loading">正在加载武器数据...</div>
+    <h1>明日方舟：终末地基质筛选工具</h1>
+    <div class="subtitle">
+        <ul>
+            <li>六星武器 & 五星武器</li>
+            <li>五星基质</li>
+        </ul>
     </div>
-    <div class="form-group">
-        <label>基质基础属性：</label>
-        <select id="baseAttrSelect"></select>
-    </div>
-    <div class="form-group">
-        <label>基质附加属性：</label>
-        <select id="extraAttrSelect"></select>
-    </div>
-    <div class="form-group">
-        <label>基质技能属性：</label>
-        <select id="skillAttrSelect"></select>
-    </div>
-    <div class="form-group">
-        <label>匹配模式：</label>
-        <select id="matchMode">
-            <option value="false">模糊匹配（包含词条）</option>
-            <option value="true">精准匹配（完全一致）</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <button onclick="filterWeapons()" disabled id="filterBtn">开始筛选</button>
-        <div id="msg" class=""></div>
+
+    <!-- 状态加载 -->
+    <div id="loadStatus" class="status-message loading">正在加载武器数据...</div>
+
+    <!-- 筛选条件区域 -->
+    <div class="filter-section">
+        <div class="filter-title">基质属性筛选</div>
+        <div class="filter-grid">
+            <div class="form-group">
+                <label for="baseAttrSelect">基础属性</label>
+                <select id="baseAttrSelect"></select>
+            </div>
+            <div class="form-group">
+                <label for="extraAttrSelect">附加属性</label>
+                <select id="extraAttrSelect"></select>
+            </div>
+            <div class="form-group">
+                <label for="skillAttrSelect">技能属性</label>
+                <select id="skillAttrSelect"></select>
+            </div>
+        </div>
+        <div class="button-group">
+            <button onclick="filterWeapons()" disabled id="filterBtn">开始筛选</button>
+        </div>
+        <div id="msg" class="status-message" style="display: none;"></div>
     </div>
 
     <!-- 筛选结果展示 -->
     <div class="result-area">
-        <h3>筛选结果：</h3>
-        <div id="resultList"></div>
+        <div class="result-title">筛选结果</div>
+        <div id="resultList" class="result-list"></div>
+    </div>
+
+    <!-- 页脚说明区域 -->
+    <div class="footer">
+        <p>本工具仅用于游戏辅助，数据来自官方信息。如有问题，欢迎反馈。点击<a href="https://hyakuya1029.github.io/">博客</a>以获取我的联系方式。</p>
+        <p>数据更新于：2026年2月，数据来源：<a href="https://wiki.skland.com/endfield/catalog?typeMainId=1&typeSubId=2">明日方舟:终末地官方WIKI</a></p>
+        <p>版权所有 © 2026 | 明日方舟:终末地基质筛选工具</p>
     </div>
 </div>
 
@@ -85,13 +314,13 @@
     // 全局存储解析后的武器数据
     let allWeapons = [];
     // Excel文件路径（GitHub仓库内的相对路径，和index.html同目录）
-    const EXCEL_FILE_PATH = "weapon_data.xlsx";
+    const EXCEL_FILE_PATH = "data/weapon_data.xlsx";
     // 新增：图片文件夹路径（GitHub仓库内的相对路径）
-    const IMAGE_FOLDER_PATH = "images/";
+    const IMAGE_FOLDER_PATH = "data/images/";
     // 前端静态词条数据：按需维护
     const STATIC_OPTIONS = {
         base: ["敏捷提升", "力量提升", "意志提升", "智识提升", "主能力提升"],
-        extra: ["攻击提升", "生命提升", "物理伤害提升", "灼热伤害提升", "电磁伤害提升", "寒冷伤害提升", "自然伤害提升", "暴击率提升", "源石技艺提升", "终结技效率提升", "法术伤害提升", "治疗效率提升"],
+        extra: ["攻击提升", "生命提升", "物理伤害提升", "灼热伤害提升", "电磁伤害提升", "寒冷伤害提升", "自然伤害提升", "暴击率提升", "源石技艺强度提升", "终结技充能提升", "法术伤害提升", "治疗效率提升"],
         skill: ["效益", "流转", "夜幕", "迸发", "切骨", "医疗", "附术", "残暴", "巧技", "昂扬", "粉碎", "追袭", "压制", "强攻"]
     };
 
@@ -167,7 +396,6 @@
         const baseAttr = document.getElementById("baseAttrSelect").value.trim();
         const extraAttr = document.getElementById("extraAttrSelect").value.trim();
         const skillAttr = document.getElementById("skillAttrSelect").value.trim();
-        const isExactMatch = document.getElementById("matchMode").value === "true";
         const msgDom = document.getElementById("msg");
 
         const hasBase = baseAttr !== "";
@@ -178,9 +406,9 @@
         if (hasBase || hasExtra || hasSkill) {
             matchedWeapons = allWeapons.filter(weapon => {
                 let ok = true;
-                if (hasBase) ok = ok && matchAttr(weapon["基础属性"], baseAttr, isExactMatch);
-                if (hasExtra) ok = ok && matchAttr(weapon["附加属性"], extraAttr, isExactMatch);
-                if (hasSkill) ok = ok && matchAttr(weapon["技能属性"], skillAttr, isExactMatch);
+                if (hasBase) ok = ok && matchAttr(weapon["基础属性"], baseAttr, false);
+                if (hasExtra) ok = ok && matchAttr(weapon["附加属性"], extraAttr, false);
+                if (hasSkill) ok = ok && matchAttr(weapon["技能属性"], skillAttr, false);
                 return ok;
             });
         }
@@ -190,34 +418,44 @@
         renderResult(matchedWeapons);
     }
 
-    // 渲染筛选结果（包含图片，替换原有renderResult函数）
     function renderResult(weapons) {
         const resultList = document.getElementById("resultList");
+        const msgDom = document.getElementById("msg");
+
         if (!weapons || weapons.length === 0) {
-            resultList.innerHTML = "<p>未找到匹配的武器！</p>";
+            resultList.innerHTML = `
+                <div style="grid-column: 1 / -1;">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">-</div>
+                        <p>未找到匹配的武器</p>
+                        <p style="font-size: 12px; color: #a0aec0; margin-top: 10px;">请尝试调整筛选条件</p>
+                    </div>
+                </div>
+            `;
+            msgDom.style.display = "none";
             return;
         }
 
         let html = "";
         weapons.forEach(weapon => {
-            // 新增：构建图片URL（读取Excel中的“图片文件名”列）
             const imageFileName = weapon['图片文件名'] || "default.png";
             const imageUrl = IMAGE_FOLDER_PATH + imageFileName;
 
-            // 新增：图片标签 + 容错处理（onerror）
             html += `
-        <div class="weapon-item">
-            <img src="${imageUrl}" alt="${weapon['武器名称']}" class="weapon-img" onerror="this.src='${IMAGE_FOLDER_PATH}default.png'">
-            <div class="weapon-info">
-                <h3>${weapon['武器名称'] || "无"}</h3>
-                <p><strong>基础属性：</strong>${weapon['基础属性'] || "无"}</p>
-                <p><strong>附加属性：</strong>${weapon['附加属性'] || "无"}</p>
-                <p><strong>技能属性：</strong>${weapon['技能属性'] || "无"}</p>
-            </div>
-        </div>
-        `;
+                <div class="weapon-item">
+                    <img src="${imageUrl}" alt="${weapon['武器名称']}" class="weapon-img" onerror="this.src='${IMAGE_FOLDER_PATH}default.png'">
+                    <div class="weapon-info">
+                        <h3>${weapon['武器名称'] || "未知"}</h3>
+                        <p class="weapon-type"><span class="type-badge">${weapon['武器类型'] || "未分类"}</span></p>
+                        <p><strong>基础属性</strong><br>${weapon['基础属性'] || "无"}</p>
+                        <p><strong>附加属性</strong><br>${weapon['附加属性'] || "无"}</p>
+                        <p><strong>技能属性</strong><br>${weapon['技能属性'] || "无"}</p>
+                    </div>
+                </div>
+            `;
         });
         resultList.innerHTML = html;
+        msgDom.style.display = "block";
     }
 </script>
 </body>
