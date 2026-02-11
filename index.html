@@ -169,20 +169,24 @@
         const skillAttr = document.getElementById("skillAttrSelect").value.trim();
         const isExactMatch = document.getElementById("matchMode").value === "true";
         const msgDom = document.getElementById("msg");
-        const resultList = document.getElementById("resultList");
 
-        // 执行筛选
-        const matchedWeapons = allWeapons.filter(weapon => {
-            const baseMatch = matchAttr(weapon['基础属性'], baseAttr, isExactMatch);
-            const extraMatch = matchAttr(weapon['附加属性'], extraAttr, isExactMatch);
-            const skillMatch = matchAttr(weapon['技能属性'], skillAttr, isExactMatch);
-            return baseMatch || extraMatch || skillMatch;
-        });
+        const hasBase = baseAttr !== "";
+        const hasExtra = extraAttr !== "";
+        const hasSkill = skillAttr !== "";
 
-        // 提示结果数量
+        let matchedWeapons = [];
+        if (hasBase || hasExtra || hasSkill) {
+            matchedWeapons = allWeapons.filter(weapon => {
+                let ok = true;
+                if (hasBase) ok = ok && matchAttr(weapon["基础属性"], baseAttr, isExactMatch);
+                if (hasExtra) ok = ok && matchAttr(weapon["附加属性"], extraAttr, isExactMatch);
+                if (hasSkill) ok = ok && matchAttr(weapon["技能属性"], skillAttr, isExactMatch);
+                return ok;
+            });
+        }
+
         msgDom.className = "success";
         msgDom.innerText = `共找到 ${matchedWeapons.length} 个匹配的武器`;
-        // 渲染结果
         renderResult(matchedWeapons);
     }
 
