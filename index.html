@@ -2,14 +2,14 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>武器-基质筛选工具（GitHub Excel版）</title>
+    <title>明日方舟:终末地基质筛选工具</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { max-width: 1000px; margin: 20px auto; font-family: "Microsoft Yahei", sans-serif; }
         .container { padding: 20px; border: 1px solid #eee; border-radius: 8px; }
         .form-group { margin: 15px 0; }
         label { display: inline-block; width: 120px; font-weight: bold; }
-        input[type="text"], select { width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        select { width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 10px 20px; background: #0078d7; color: white; border: none; border-radius: 4px; cursor: pointer; }
         button:hover { background: #005a9e; }
         .result-area { margin-top: 30px; padding: 20px; border-top: 1px dashed #ccc; }
@@ -17,30 +17,49 @@
         .error { color: red; margin-top: 10px; }
         .success { color: green; margin-top: 10px; }
         .loading { color: #666; margin-top: 10px; }
+        /* 新增：武器卡片布局（Flex排版，图片+信息） */
+        .weapon-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        /* 新增：武器图片样式 */
+        .weapon-img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #ddd;
+        }
+        /* 新增：武器信息区域占满剩余宽度 */
+        .weapon-info { flex: 1; }
     </style>
     <!-- 引入SheetJS库，解析Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="container">
-    <h1>游戏武器-基质筛选工具</h1>
+    <h1>明日方舟:终末地基质筛选工具</h1>
+    <h2>武器目前仅收录六星武器和五行武器</h2>
+    <h2>基质目前仅收录五星基质</h2>
     <!-- 移除文件上传框，改为自动加载GitHub里的Excel -->
     <div class="form-group">
         <div id="loadStatus" class="loading">正在加载武器数据...</div>
     </div>
     <div class="form-group">
         <label>基质基础属性：</label>
-        <input type="text" id="baseAttr" placeholder="如：攻击力+100">
         <select id="baseAttrSelect"></select>
     </div>
     <div class="form-group">
         <label>基质附加属性：</label>
-        <input type="text" id="extraAttr" placeholder="如：火属性伤害+20%">
         <select id="extraAttrSelect"></select>
     </div>
     <div class="form-group">
         <label>基质技能属性：</label>
-        <input type="text" id="skillAttr" placeholder="如：炎爆术+1">
         <select id="skillAttrSelect"></select>
     </div>
     <div class="form-group">
@@ -67,6 +86,8 @@
     let allWeapons = [];
     // Excel文件路径（GitHub仓库内的相对路径，和index.html同目录）
     const EXCEL_FILE_PATH = "weapon_data.xlsx";
+    // 新增：图片文件夹路径（GitHub仓库内的相对路径）
+    const IMAGE_FOLDER_PATH = "images/";
     // 前端静态词条数据：按需维护
     const STATIC_OPTIONS = {
         base: ["敏捷提升", "力量提升", "意志提升", "智识提升", "主能力提升"],
@@ -77,7 +98,6 @@
     // 页面加载完成后，自动读取GitHub里的Excel
     window.onload = function() {
         fillSelectOptionsFromStatic();
-        bindSelectToInput();
         loadExcelFromGitHub();
     };
 
@@ -133,20 +153,6 @@
         });
     }
 
-    function bindSelectToInput() {
-        const map = [
-            { select: "baseAttrSelect", input: "baseAttr" },
-            { select: "extraAttrSelect", input: "extraAttr" },
-            { select: "skillAttrSelect", input: "skillAttr" }
-        ];
-
-        map.forEach(item => {
-            document.getElementById(item.select).addEventListener("change", e => {
-                document.getElementById(item.input).value = e.target.value;
-            });
-        });
-    }
-
     // 词条匹配逻辑
     function matchAttr(weaponAttr, matrixAttr, isExactMatch) {
         if (!matrixAttr || matrixAttr.trim() === "") return true;
@@ -158,9 +164,9 @@
 
     // 筛选武器核心方法
     function filterWeapons() {
-        const baseAttr = document.getElementById("baseAttr").value.trim();
-        const extraAttr = document.getElementById("extraAttr").value.trim();
-        const skillAttr = document.getElementById("skillAttr").value.trim();
+        const baseAttr = document.getElementById("baseAttrSelect").value.trim();
+        const extraAttr = document.getElementById("extraAttrSelect").value.trim();
+        const skillAttr = document.getElementById("skillAttrSelect").value.trim();
         const isExactMatch = document.getElementById("matchMode").value === "true";
         const msgDom = document.getElementById("msg");
         const resultList = document.getElementById("resultList");
@@ -180,7 +186,7 @@
         renderResult(matchedWeapons);
     }
 
-    // 渲染筛选结果
+    // 渲染筛选结果（包含图片，替换原有renderResult函数）
     function renderResult(weapons) {
         const resultList = document.getElementById("resultList");
         if (!weapons || weapons.length === 0) {
@@ -190,14 +196,22 @@
 
         let html = "";
         weapons.forEach(weapon => {
+            // 新增：构建图片URL（读取Excel中的“图片文件名”列）
+            const imageFileName = weapon['图片文件名'] || "default.png";
+            const imageUrl = IMAGE_FOLDER_PATH + imageFileName;
+
+            // 新增：图片标签 + 容错处理（onerror）
             html += `
-                <div class="weapon-item">
-                    <p><strong>武器名称：</strong>${weapon['武器名称'] || "无"}</p>
-                    <p><strong>基础属性：</strong>${weapon['基础属性'] || "无"}</p>
-                    <p><strong>附加属性：</strong>${weapon['附加属性'] || "无"}</p>
-                    <p><strong>技能属性：</strong>${weapon['技能属性'] || "无"}</p>
-                </div>
-                `;
+        <div class="weapon-item">
+            <img src="${imageUrl}" alt="${weapon['武器名称']}" class="weapon-img" onerror="this.src='${IMAGE_FOLDER_PATH}default.png'">
+            <div class="weapon-info">
+                <h3>${weapon['武器名称'] || "无"}</h3>
+                <p><strong>基础属性：</strong>${weapon['基础属性'] || "无"}</p>
+                <p><strong>附加属性：</strong>${weapon['附加属性'] || "无"}</p>
+                <p><strong>技能属性：</strong>${weapon['技能属性'] || "无"}</p>
+            </div>
+        </div>
+        `;
         });
         resultList.innerHTML = html;
     }
